@@ -1,58 +1,47 @@
-import React from "react";
-import { Formik, Form, Field, ErrorMessage, useField } from "formik";
-import {
-    Input,
-    InputGroup,
-    Stack,
-    InputLeftAddon,
-    InputRightAddon,
-    FormHelperText,
-    RadioGroup,
-    Radio,
-    Select,
-    Switch,
-    FormLabel,
-    Flex,
-    Button,
-    FormControl
-  } from "@chakra-ui/core";
+import React, { useState } from "react";
+import axios from 'axios';
+import { Formik, Form, useField } from "formik";
+import { Button } from "@chakra-ui/core";
+import { FaUserAlt, FaEnvelope, FaLock } from "react-icons/fa";
 import * as Yup from "yup";
-import { css } from '@emotion/core';
+import FormInput from './FormInput';
+import FormButton from './FormButton';
+import { emailRegex } from '../utils/regex';
 
-function Checkbox ({label, ...props}) {
-  const [field, meta, helper] = useField(props);
-  const { value } = meta;
-  const { setValue } = helper;
-  const handleChange = () => {
-    const set = new Set(value);
-    if (set.has(props.value)) {
-      set.delete(props.value);
-    }else {
-      set.add(props.value);
+// 注册组件
+function SignUp() {
+  const initialValues = {username: '', email: '', password: ''};
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const handleSubmit = async (values) => {
+    setSubmitLoading(true)
+    try {
+        const params = {
+            'user': {  
+                'username': values.username,  
+                'email': values.email,
+                'password': values.password
+            }
+        }
+        const { data } = await axios.post('https://conduit.productionready.io/api/users', params)
+        console.log(data);
+        window.alert('注册成功')
+    } catch (err) {
+        const msg = JSON.stringify(err.response.data.errors)
+        window.alert(msg)
     }
-    setValue([...set])
-  }
-  return <div>
-    <label htmlFor="">
-      <input checked={value.includes(props.value)} type="checkbox" {...props} onChange={handleChange}/> {label}
-    </label>
-  </div>
-}
-
-const style = css`
-  color: #f00;
-`
-console.log(style);
-
-function App() {
-  const initialValues = {username: '', hobbies: ['足球', '篮球']};
-  const handleSubmit = (values) => {
-    console.log(values);
+    setSubmitLoading(false)
   };
   const schema = Yup.object({
     username: Yup.string()
-      .max(15, "用户名的长度不能大于15")
-      .required("请输入用户名"),
+      .required("请输入用户名")
+      .max(15, "用户名的长度不能大于15"),
+    email: Yup.string()
+      .required("请输入邮箱")
+      .matches(emailRegex, '请输入正确的邮箱地址'),
+    password: Yup.string()
+      .required("请输入密码")
+      .min(8, "密码的长度不能小于8")
+      .max(16, "密码的长度不能大于16"),
   });
   return (
     <Formik
@@ -61,18 +50,15 @@ function App() {
       validationSchema={schema}
     >
       <Form>
-        <div css={style}>
-            1234
-        </div>
-        <Field name="username" />
-            <ErrorMessage name="username" />
-        <Checkbox value="足球" label="足球" name="hobbies"/>
-        <Checkbox value="篮球" label="篮球" name="hobbies"/>
-        <Checkbox value="橄榄球" label="橄榄球" name="hobbies"/>
-        <input type="submit"/>
+        <FormInput name="username" placeholder="请输入用户名" icon={<FaUserAlt />} />
+        <FormInput name="email" placeholder="请输入邮箱" icon={<FaEnvelope />} />
+        <FormInput name="password" type="password" placeholder="请输入密码" icon={<FaLock />} />
+        <Button _hover={{ bgColor: "tomato" }} w="100%" colorScheme="teal" mt="26px" type="submit" isLoading={submitLoading}>
+          注册
+        </Button>
       </Form>
     </Formik>
   );
 }
 
-export default App;
+export default SignUp;
